@@ -5,8 +5,8 @@ set -e
 OUTPUT_FILE="${1:-../../vent.help/.env.generated}"
 
 # Ensure we are in the right directory
-if [ ! -f "terraform.tfstate" ]; then
-  echo "Error: Run this script from the Terraform project directory (where terraform.tfstate is located)."
+if [ ! -f "main.tf" ]; then
+  echo "Error: Run this script from the Terraform project directory (where main.tf is located)."
   exit 1
 fi
 
