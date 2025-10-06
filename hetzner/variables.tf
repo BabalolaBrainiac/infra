@@ -7,11 +7,6 @@ variable "hcloud_token" {
   sensitive   = true
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for server access"
-  type        = string
-}
-
 # Environment Configuration
 variable "environment" {
   description = "Environment (dev, staging, prod)"
@@ -22,5 +17,10 @@ variable "environment" {
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "babalolas-hetzner-infra"
+  default     = "babalolas-infra"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for server access"
+  type        = string
 }

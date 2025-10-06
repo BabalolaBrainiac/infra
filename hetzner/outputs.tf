@@ -54,21 +54,6 @@ output "postgres_admin_connection_string" {
   sensitive   = true
 }
 
-output "postgres_ssh_connection_command" {
-  description = "SSH connection command for PostgreSQL server"
-  value       = local.connection_info.ssh_command
-}
-
-output "postgres_pgadmin_url" {
-  description = "pgAdmin web interface URL (if enabled)"
-  value       = local.connection_info.pgadmin_url
-}
-
-output "postgres_firewall_id" {
-  description = "ID of the PostgreSQL firewall"
-  value       = module.postgres.firewall_id
-}
-
 output "postgres_password_file_location" {
   description = "Location of the PostgreSQL password file"
   value       = module.postgres.password_file_location

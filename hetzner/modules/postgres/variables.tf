@@ -129,3 +129,46 @@ variable "firewall_id" {
   type        = string
   default     = null
 }
+
+# Network Configuration Variables
+variable "create_private_network" {
+  description = "Create a private network for the server"
+  type        = bool
+  default     = true
+}
+
+variable "network_ip_range" {
+  description = "IP range for the private network"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "network_zone" {
+  description = "Network zone for the subnet"
+  type        = string
+  default     = "eu-central"
+}
+
+variable "subnet_ip_range" {
+  description = "IP range for the subnet"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "server_private_ip" {
+  description = "Private IP address for the server"
+  type        = string
+  default     = "10.0.1.5"
+}
+
+variable "server_alias_ips" {
+  description = "Additional alias IPs for the server"
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_ipv6" {
+  description = "Enable IPv6 for the server"
+  type        = bool
+  default     = true
+}

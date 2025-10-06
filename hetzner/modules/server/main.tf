@@ -2,12 +2,31 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "1.49.1"
+      version = "~> 1.45"
     }
   }
 }
 # Hetzner Cloud Server Module
-# Creates a basic server with SSH key, firewall, and optional volumes
+# Creates a basic server with SSH key, firewall, optional volumes, and private network
+
+# Private Network
+resource "hcloud_network" "main" {
+  count = var.create_private_network ? 1 : 0
+  
+  name     = "${var.server_name}-network"
+  ip_range = var.network_ip_range
+  labels   = var.labels
+}
+
+# Network Subnet
+resource "hcloud_network_subnet" "main" {
+  count = var.create_private_network ? 1 : 0
+  
+  type         = "cloud"
+  network_id   = hcloud_network.main[0].id
+  network_zone = var.network_zone
+  ip_range     = var.subnet_ip_range
+}
 
 resource "hcloud_server" "main" {
   name        = var.server_name
@@ -19,16 +38,27 @@ resource "hcloud_server" "main" {
   user_data   = var.user_data
   labels      = var.labels
 
-  # Attach volumes if specified
-  dynamic "volume" {
-    for_each = var.volumes
+  # Public network configuration
+  public_net {
+    ipv4_enabled = var.create_floating_ip
+    ipv6_enabled = var.enable_ipv6
+    ipv4 = var.create_floating_ip ? hcloud_primary_ip.main[0].id : null
+  }
+
+  # Private network configuration
+  dynamic "network" {
+    for_each = var.create_private_network ? [1] : []
     content {
-      volume_id = volume.value.id
-      automount = volume.value.automount
+      network_id = hcloud_network.main[0].id
+      ip         = var.server_private_ip
+      alias_ips  = var.server_alias_ips
     }
   }
 
-  depends_on = [hcloud_ssh_key.main]
+  depends_on = [
+    hcloud_ssh_key.main,
+    hcloud_network_subnet.main
+  ]
 }
 
 # SSH Key for server access
@@ -88,6 +118,7 @@ resource "hcloud_volume" "main" {
   count = var.create_volume ? 1 : 0
   
   name     = "${var.server_name}-volume"
+  delete_protection = true
   size     = var.volume_size
   location = var.location
   labels   = var.labels
@@ -105,11 +136,12 @@ resource "hcloud_volume_attachment" "main" {
 # Floating IP (optional)
 resource "hcloud_primary_ip" "main" {
   count = var.create_floating_ip ? 1 : 0
-  
+
+  assignee_type = "server"
+
   name          = "${var.server_name}-ip"
   type          = "ipv4"
   datacenter    = var.datacenter
-  assignee      = hcloud_server.main.id
   auto_delete   = true
   labels        = var.labels
 }

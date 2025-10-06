@@ -45,27 +45,38 @@ output "volume_id" {
   value       = var.create_volume ? hcloud_volume.main[0].id : null
 }
 
-output "volume_device" {
-  description = "Device path of the attached volume"
-  value       = var.create_volume ? hcloud_volume_attachment.main[0].device : null
-}
-
-output "floating_ip" {
-  description = "Floating IP address (if created)"
-  value       = var.create_floating_ip ? hcloud_primary_ip.main[0].ip_address : null
-}
-
 output "floating_ip_id" {
   description = "ID of the floating IP (if created)"
   value       = var.create_floating_ip ? hcloud_primary_ip.main[0].id : null
 }
 
+output "floating_ip_address" {
+  description = "Floating IP address (if created)"
+  value       = var.create_floating_ip ? hcloud_primary_ip.main[0].ip_address : null
+}
+
+# Network Outputs
+output "network_id" {
+  description = "ID of the private network (if created)"
+  value       = var.create_private_network ? hcloud_network.main[0].id : null
+}
+
+output "network_name" {
+  description = "Name of the private network (if created)"
+  value       = var.create_private_network ? hcloud_network.main[0].name : null
+}
+
+output "subnet_id" {
+  description = "ID of the subnet (if created)"
+  value       = var.create_private_network ? hcloud_network_subnet.main[0].id : null
+}
+
+output "server_private_ip" {
+  description = "Private IP address of the server"
+  value       = var.create_private_network ? var.server_private_ip : null
+}
+
 output "connection_command" {
   description = "SSH connection command"
   value       = "ssh root@${hcloud_server.main.ipv4_address}"
-}
-
-output "floating_ip_connection_command" {
-  description = "SSH connection command using floating IP"
-  value       = var.create_floating_ip ? "ssh root@${hcloud_primary_ip.main[0].ip_address}" : null
 }

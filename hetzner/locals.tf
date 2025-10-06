@@ -64,7 +64,7 @@ locals {
   # Environment-specific overrides
   environment_config = {
     dev = {
-      server_type = "cx21"  # 2 vCPU, 8GB RAM
+      server_type = "cx21"
       volume_size = 50
       enable_pgadmin = true
       backup_enabled = true
@@ -90,13 +90,5 @@ locals {
     floating_ip     = "${var.project_name}-${var.environment}-ip"
     ssh_firewall    = "${var.project_name}-${var.environment}-ssh-firewall"
     postgres_firewall = "${var.project_name}-${var.environment}-postgres-firewall"
-  }
-
-  # Connection information
-  connection_info = {
-    ssh_command = "ssh root@${module.networking.floating_ip}"
-    postgres_host = module.networking.floating_ip
-    postgres_port = 5432
-    pgadmin_url = var.environment == "dev" ? "http://${module.networking.floating_ip}:5050" : null
   }
 }

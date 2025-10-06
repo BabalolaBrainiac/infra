@@ -5,10 +5,11 @@
 set -e
 
 # Variables from Terraform
-POSTGRES_VERSION="${postgres_version}"
-ADMIN_USER="${admin_user}"
-ADMIN_PASSWORD="${admin_password}"
-BACKUP_ENABLED="${backup_enabled}"
+postgres_version=${postgres_version}
+admin_user=${admin_user}
+admin_password=${admin_password}
+backup_enabled=${backup_enabled}
+databases='${databases}'
 
 echo "Starting PostgreSQL server setup..."
 
@@ -25,7 +26,7 @@ echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main"
 
 # Update package list and install PostgreSQL
 apt-get update
-apt-get install -y postgresql-${POSTGRES_VERSION} postgresql-client-${POSTGRES_VERSION} postgresql-contrib-${POSTGRES_VERSION}
+apt-get install -y postgresql-${postgres_version} postgresql-client-${postgres_version} postgresql-contrib-${postgres_version}
 
 # Start and enable PostgreSQL service
 systemctl start postgresql
@@ -33,13 +34,13 @@ systemctl enable postgresql
 
 # Configure PostgreSQL
 PG_VERSION=$(sudo -u postgres psql -t -c "SELECT version();" | grep -oP '\d+\.\d+' | head -1)
-PG_CONFIG_DIR="/etc/postgresql/${POSTGRES_VERSION}/main"
-PG_DATA_DIR="/var/lib/postgresql/${POSTGRES_VERSION}/main"
+PG_CONFIG_DIR="/etc/postgresql/${postgres_version}/main"
+PG_DATA_DIR="/var/lib/postgresql/${postgres_version}/main"
 
-echo "PostgreSQL ${POSTGRES_VERSION} installed successfully"
+echo "PostgreSQL ${postgres_version} installed successfully"
 
 # Configure PostgreSQL for remote connections
-cat >> ${PG_CONFIG_DIR}/postgresql.conf << EOF
+cat >> /etc/postgresql/${postgres_version}/main/postgresql.conf << EOF
 
 # Custom configuration for multi-database server
 listen_addresses = '*'
@@ -76,7 +77,7 @@ log_error_verbosity = default
 EOF
 
 # Configure pg_hba.conf for remote connections
-cat >> ${PG_CONFIG_DIR}/pg_hba.conf << EOF
+cat >> /etc/postgresql/${postgres_version}/main/pg_hba.conf << EOF
 
 # Allow connections from any IP (restrict in production!)
 host    all             all             0.0.0.0/0               md5
@@ -84,7 +85,7 @@ host    all             all             ::/0                    md5
 EOF
 
 # Set PostgreSQL admin password
-sudo -u postgres psql -c "ALTER USER postgres PASSWORD '${ADMIN_PASSWORD}';"
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD '${admin_password}';"
 
 # Create databases and users
 %{ for db in databases ~}
@@ -124,31 +125,66 @@ if [ -b /dev/sdb ]; then
 fi
 
 # Setup automated backups if enabled
-if [ "${BACKUP_ENABLED}" = "true" ]; then
+if [ "${backup_enabled}" = "true" ]; then
     echo "Setting up automated backups..."
     
     # Create backup directory
     mkdir -p /var/backups/postgresql
     chown postgres:postgres /var/backups/postgresql
     
-    # Create backup script
-    cat > /usr/local/bin/postgres-backup.sh << 'EOF'
+    # Create a separate backup script file
+    cat > /tmp/backup-script.sh << 'BACKUP_EOF'
 #!/bin/bash
-BACKUP_DIR="/var/backups/postgresql"
-DATE=$(date +%Y%m%d_%H%M%S)
 
-# Create backup for each database
-for db in $(sudo -u postgres psql -t -c "SELECT datname FROM pg_database WHERE datistemplate = false;" | grep -v '^$'); do
-    echo "Backing up database: $db"
-    sudo -u postgres pg_dump $db > ${BACKUP_DIR}/${db}_${DATE}.sql
+# Configuration
+BACKUP_DIR="/var/backups/postgresql/$(date +%Y-%m-%d)"
+LOG_FILE="/var/log/postgres-backup.log"
+KEEP_DAYS=7
+
+# Create log directory if it doesn't exist
+mkdir -p "$(dirname "$LOG_FILE")"
+
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting PostgreSQL backup" | tee -a "$LOG_FILE"
+
+# Ensure backup directory exists
+mkdir -p "$BACKUP_DIR"
+chown postgres:postgres "$BACKUP_DIR"
+
+# Backup globals (roles, tablespaces, etc.)
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Backing up global objects" | tee -a "$LOG_FILE"
+if ! sudo -u postgres pg_dumpall --globals-only | gzip > "$BACKUP_DIR/globals.sql.gz"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to backup global objects" | tee -a "$LOG_FILE"
+fi
+
+# Get list of databases to backup (excluding system databases)
+DATABASES=$(sudo -u postgres psql -t -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname NOT IN ('postgres', 'template0', 'template1');" | grep -v '^$' | awk '{$1=$1};1')
+
+# Backup each database
+for DB_TO_BACKUP in $DATABASES; do
+    BACKUP_FILE="$BACKUP_DIR/$DB_TO_BACKUP.sql.gz"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Backing up database: $DB_TO_BACKUP" | tee -a "$LOG_FILE"
+    
+    if ! sudo -u postgres pg_dump "$DB_TO_BACKUP" | gzip > "$BACKUP_FILE"; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to backup database: $DB_TO_BACKUP" | tee -a "$LOG_FILE"
+        continue
+    fi
+    
+    # Set proper permissions
+    chmod 600 "$BACKUP_FILE"
+    chown postgres:postgres "$BACKUP_FILE"
+    
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Successfully backed up: $DB_TO_BACKUP" | tee -a "$LOG_FILE"
 done
 
-# Compress old backups (keep last 7 days)
-find ${BACKUP_DIR} -name "*.sql" -mtime +7 -delete
+# Clean up old backups
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cleaning up backups older than $KEEP_DAYS days" | tee -a "$LOG_FILE"
+find "$(dirname "$BACKUP_DIR")" -maxdepth 1 -type d -mtime +$KEEP_DAYS -exec echo "Removing old backup: {}" \; -exec rm -rf {} \; | tee -a "$LOG_FILE"
 
-echo "Backup completed at $(date)"
-EOF
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Backup completed" | tee -a "$LOG_FILE"
+BACKUP_EOF
 
+    # Move the script to its final location and set permissions
+    mv /tmp/backup-script.sh /usr/local/bin/postgres-backup.sh
     chmod +x /usr/local/bin/postgres-backup.sh
     
     # Add to crontab for daily backups at 2 AM

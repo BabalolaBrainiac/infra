@@ -9,7 +9,6 @@ module "networking" {
   create_floating_ip = local.networking_config.create_floating_ip
   allowed_ssh_ips    = local.current_env_config.allowed_ssh_ips
   postgres_allowed_ips = local.current_env_config.postgres_allowed_ips
-  datacenter         = local.server_config.datacenter
 
   labels = merge(local.common_labels, {
     Service = "networking"

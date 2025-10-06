@@ -35,7 +35,7 @@ module "postgres_server" {
   server_type     = var.server_type
   location        = var.location
   ssh_public_key  = var.ssh_public_key
-  
+
   enable_firewall     = true
   enable_web_access   = false  # No web access needed for database server
   allowed_ssh_ips    = var.allowed_ssh_ips
@@ -43,10 +43,17 @@ module "postgres_server" {
   create_volume      = true
   volume_size        = var.volume_size  # Additional storage for databases
   
-  create_floating_ip = var.create_floating_ip
+  # Network configuration
+  create_private_network = var.create_private_network
+  network_ip_range      = var.network_ip_range
+  network_zone          = var.network_zone
+  subnet_ip_range       = var.subnet_ip_range
+  server_private_ip     = var.server_private_ip
+  server_alias_ips      = var.server_alias_ips
+  enable_ipv6           = var.enable_ipv6
   
   # Cloud-init script to install and configure PostgreSQL
-  user_data = templatefile("${path.module}/scripts/postgres-setup.sh", {
+  user_data = templatefile("${path.module}/scripts/postgres-setup.sh", jsonencode({
     postgres_version = var.postgres_version
     admin_user       = var.postgres_admin_user
     admin_password   = random_password.postgres_admin_password.result
@@ -58,18 +65,10 @@ module "postgres_server" {
       }
     ]
     backup_enabled   = var.backup_enabled
-  })
+  }))
   
   labels = merge(var.labels, {
     Service     = "postgresql"
     PostgreSQL  = var.postgres_version
   })
-}
-
-# Attach the external firewall to the server
-resource "hcloud_server_firewall" "postgres_firewall" {
-  count = var.firewall_id != null ? 1 : 0
-  
-  server_id   = module.postgres_server.server_id
-  firewall_id = var.firewall_id
 }

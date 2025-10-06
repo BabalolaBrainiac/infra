@@ -1,17 +1,12 @@
-# Networking Module Main Configuration
-
-# Floating IP for the infrastructure
-resource "hcloud_primary_ip" "main" {
-  count = var.create_floating_ip ? 1 : 0
-  
-  name          = "${var.project_name}-${var.environment}-ip"
-  type          = "ipv4"
-  datacenter    = var.datacenter
-  auto_delete   = true
-  labels        = merge(var.labels, {
-    Service = "networking"
-  })
+terraform {
+  required_providers {
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "1.49.1"
+    }
+  }
 }
+# Networking Module Main Configuration
 
 # General firewall for SSH access
 resource "hcloud_firewall" "ssh" {
@@ -55,4 +50,19 @@ resource "hcloud_firewall" "postgres" {
     Service = "networking"
     Purpose = "postgres-access"
   })
+}
+
+
+## Network Configuration
+
+resource "hcloud_network" "network" {
+  name     = "network"
+  ip_range = "10.0.0.0/16"
+}
+
+resource "hcloud_network_subnet" "network-subnet" {
+  type         = "cloud"
+  network_id   = hcloud_network.network.id
+  network_zone = "eu-central"
+  ip_range     = "10.0.1.0/24"
 }
