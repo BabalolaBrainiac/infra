@@ -1,0 +1,127 @@
+name: Terraform PR Checks
+
+on:
+  pull_request:
+    paths:
+      - '**/*.tf'
+      - '**/*.tfvars'
+      - 'environments/**'
+    types: [opened, synchronize, reopened]
+
+env:
+  TF_VERSION: '1.5.0'
+
+jobs:
+  terraform-checks:
+    name: Terraform Validation & Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Determine Environment
+        id: env
+        run: |
+          # Default to dev for PR checks
+          echo "environment=dev" >> $GITHUB_OUTPUT
+          echo "Selected environment: dev"
+
+      - name: Terraform Init
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN_app_terraform_io }}
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: |
+          terraform init \
+            -backend-config=environments/${{ steps.env.outputs.environment }}/backend-config.hcl
+
+      - name: Terraform Format Check
+        id: format
+        run: terraform fmt -check
+        continue-on-error: false
+
+      - name: Terraform Validate
+        id: validate
+        env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        env:
+          TF_TOKEN_app_terraform_io: ${{ secrets.TF_TOKEN_app_terraform_io }}
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          TF_VAR_ssh_public_key: ${{ secrets.SSH_PUBLIC_KEY }}
+        id: plan
+        run: |
+          terraform plan \
+            -var-file=environments/${{ steps.env.outputs.environment }}/${{ steps.env.outputs.environment }}.tfvars \
+            -no-color \
+            -detailed-exitcode > plan_output.txt 2>&1
+          PLAN_EXIT_CODE=$?
+          echo "exit_code=$PLAN_EXIT_CODE" >> $GITHUB_OUTPUT
+          cat plan_output.txt
+          exit $PLAN_EXIT_CODE
+        continue-on-error: true
+
+      - name: Read Plan Output
+        if: github.event_name == 'pull_request'
+        id: read-plan
+        run: |
+          if [ -f plan_output.txt ]; then
+            PLAN_OUTPUT=$(cat plan_output.txt)
+            echo "plan_output<<EOF" >> $GITHUB_OUTPUT
+            echo "$PLAN_OUTPUT" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "plan_output=Plan output not available" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const planStatus = '${{ steps.plan.outcome }}' === 'success' ? '✅ Passed' : '❌ Failed';
+            const formatStatus = '${{ steps.format.outcome }}' === 'success' ? '✅ Passed' : '❌ Failed';
+            const validateStatus = '${{ steps.validate.outcome }}' === 'success' ? '✅ Passed' : '❌ Failed';
+            const planOutput = `${{ steps.read-plan.outputs.plan_output }}`.substring(0, 60000);
+            
+            const output = `## Terraform PR Checks
+
+            | Check | Status |
+            |-------|--------|
+            | Format & Style | ${formatStatus} |
+            | Validation | ${validateStatus} |
+            | Plan | ${planStatus} |
+
+            <details><summary>Show Terraform Plan Output</summary>
+
+            \`\`\`
+            ${planOutput.substring(0, 60000)}
+            \`\`\`
+
+            </details>
+
+            *Triggered by: @${{ github.actor }}, Environment: \`${{ steps.env.outputs.environment }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
