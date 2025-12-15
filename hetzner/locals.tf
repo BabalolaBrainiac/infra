@@ -23,27 +23,28 @@ locals {
 
   # Server configuration defaults
   server_config = {
-    type     = "cx21"  # 2 vCPU, 8GB RAM - good for development
-    location = "nbg1"  # Nuremberg, Germany
-    image    = "debian-12"  # Debian 12 for better package management
-    volume_size = 50  # 50GB additional storage
-    datacenter = "nbg1-dc3"  # Specific datacenter for floating IPs
+    type        = "cpx21"     # 3 vCPU, 4GB RAM - good for development
+    location    = "nbg1"      # Nuremberg, Germany
+    image       = "debian-12" # Debian 12 for better package management
+    volume_size = 50          # 50GB additional storage
+    datacenter  = "nbg1-dc3"  # Specific datacenter for floating IPs
   }
 
   # Networking configuration defaults
   networking_config = {
-    create_floating_ip = true
-    allowed_ssh_ips    = ["0.0.0.0/0", "::/0"]  # Open for development
-    postgres_allowed_ips = ["0.0.0.0/0", "::/0"]  # Open for development
+    create_floating_ip   = true
+    allowed_ssh_ips      = ["0.0.0.0/0", "::/0"] # Open for development
+    postgres_allowed_ips = ["0.0.0.0/0", "::/0"] # Open for development
+    redis_allowed_ips    = ["0.0.0.0/0", "::/0"] # Open for development
   }
 
   # PostgreSQL configuration defaults
   postgres_config = {
-    version      = "15"
-    admin_user   = "opeyemi"
-    enable_pgadmin = true
-    backup_enabled = true
-    password_length = 32
+    version                = "15"
+    admin_user             = "opeyemi"
+    enable_pgadmin         = true
+    backup_enabled         = true
+    password_length        = 32
     password_special_chars = true
     databases = [
       {
@@ -64,20 +65,22 @@ locals {
   # Environment-specific overrides
   environment_config = {
     dev = {
-      server_type = "cx21"
-      volume_size = 50
-      enable_pgadmin = true
-      backup_enabled = true
-      allowed_ssh_ips = ["0.0.0.0/0", "::/0"]  # Open for development
-      postgres_allowed_ips = ["0.0.0.0/0", "::/0"]  # Open for development
+      server_type          = "cpx21"
+      volume_size          = 50
+      enable_pgadmin       = true
+      backup_enabled       = true
+      allowed_ssh_ips      = ["0.0.0.0/0", "::/0"] # Open for development
+      postgres_allowed_ips = ["0.0.0.0/0", "::/0"] # Open for development
+      redis_allowed_ips    = ["0.0.0.0/0", "::/0"] # Open for development
     }
     prod = {
-      server_type = "cx31"  # 2 vCPU, 8GB RAM, 80GB SSD
-      volume_size = 100
-      enable_pgadmin = false
-      backup_enabled = true
-      allowed_ssh_ips = ["YOUR_IP_ADDRESS/32"]  # Restrict in production
+      server_type          = "cpx31"
+      volume_size          = 100
+      enable_pgadmin       = false
+      backup_enabled       = true
+      allowed_ssh_ips      = ["YOUR_IP_ADDRESS/32"] # Restrict in production
       postgres_allowed_ips = ["YOUR_IP_ADDRESS/32", "YOUR_APP_SERVER_IP/32"]
+      redis_allowed_ips    = ["YOUR_IP_ADDRESS/32", "YOUR_APP_SERVER_IP/32"]
     }
   }
 
@@ -86,9 +89,11 @@ locals {
 
   # Resource naming convention
   resource_names = {
-    postgres_server = "${var.project_name}-postgres-${var.environment}"
-    floating_ip     = "${var.project_name}-${var.environment}-ip"
-    ssh_firewall    = "${var.project_name}-${var.environment}-ssh-firewall"
+    postgres_server   = "${var.project_name}-postgres-${var.environment}"
+    redis_server      = "${var.project_name}-redis-${var.environment}"
+    floating_ip       = "${var.project_name}-${var.environment}-ip"
+    ssh_firewall      = "${var.project_name}-${var.environment}-ssh-firewall"
     postgres_firewall = "${var.project_name}-${var.environment}-postgres-firewall"
+    redis_firewall    = "${var.project_name}-${var.environment}-redis-firewall"
   }
 }

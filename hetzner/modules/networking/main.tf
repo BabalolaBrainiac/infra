@@ -11,7 +11,7 @@ terraform {
 # General firewall for SSH access
 resource "hcloud_firewall" "ssh" {
   name = "${var.project_name}-${var.environment}-ssh-firewall"
-  
+
   # SSH access
   rule {
     direction  = "in"
@@ -19,7 +19,7 @@ resource "hcloud_firewall" "ssh" {
     protocol   = "tcp"
     source_ips = var.allowed_ssh_ips
   }
-  
+
   labels = merge(var.labels, {
     Service = "networking"
     Purpose = "ssh-access"
@@ -29,7 +29,7 @@ resource "hcloud_firewall" "ssh" {
 # PostgreSQL firewall
 resource "hcloud_firewall" "postgres" {
   name = "${var.project_name}-${var.environment}-postgres-firewall"
-  
+
   # SSH access
   rule {
     direction  = "in"
@@ -45,7 +45,7 @@ resource "hcloud_firewall" "postgres" {
     protocol   = "tcp"
     source_ips = var.postgres_allowed_ips
   }
-  
+
   labels = merge(var.labels, {
     Service = "networking"
     Purpose = "postgres-access"

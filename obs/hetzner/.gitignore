@@ -1,0 +1,6 @@
+.env
+secrets/
+targets/*.json
+prometheus/prometheus.yml
+
+

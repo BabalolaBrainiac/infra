@@ -63,3 +63,50 @@ output "postgres_password_retrieval_command" {
   description = "Command to retrieve PostgreSQL passwords"
   value       = module.postgres.password_retrieval_command
 }
+
+output "redis_server_id" {
+  description = "id of the redis server"
+  value       = module.redis.server_id
+}
+
+output "redis_server_name" {
+  description = "name of the redis server"
+  value       = module.redis.server_name
+}
+
+output "redis_server_ipv4" {
+  description = "ipv4 address of the redis server"
+  value       = module.redis.server_ipv4
+}
+
+output "redis_server_ipv6" {
+  description = "ipv6 address of the redis server"
+  value       = module.redis.server_ipv6
+}
+
+output "redis_floating_ip" {
+  description = "floating ip address of the redis server"
+  value       = module.redis.floating_ip
+}
+
+output "redis_connection_info" {
+  description = "redis connection info"
+  value       = module.redis.redis_connection_info
+}
+
+output "redis_password" {
+  description = "redis password"
+  value       = module.redis.redis_password
+  sensitive   = true
+}
+
+output "redis_uri" {
+  description = "redis uri"
+  value       = module.redis.redis_uri
+  sensitive   = true
+}
+
+output "redis_ssh_connection_command" {
+  description = "ssh connection command"
+  value       = module.redis.ssh_connection_command
+}

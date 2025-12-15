@@ -3,7 +3,7 @@
 # SNS Topic for alarm notifications
 resource "aws_sns_topic" "alarms" {
   name = "${var.environment}-venthelp-alarms"
-  
+
   tags = {
     Name        = "${var.environment}-venthelp-alarms"
     Environment = var.environment
@@ -348,9 +348,9 @@ resource "aws_cloudwatch_metric_alarm" "network_out" {
 # Database Health Composite Alarm
 resource "aws_cloudwatch_composite_alarm" "database_health" {
   alarm_name = "${var.environment}-venthelp-db-health"
-  
+
   alarm_rule = "ALARM(${aws_cloudwatch_metric_alarm.database_cpu.alarm_name}) AND ALARM(${aws_cloudwatch_metric_alarm.database_storage.alarm_name})"
-  
+
   alarm_description = "Database is experiencing critical issues (high CPU and low storage)"
   alarm_actions     = [aws_sns_topic.alarms.arn]
   ok_actions        = [aws_sns_topic.alarms.arn]
@@ -366,9 +366,9 @@ resource "aws_cloudwatch_composite_alarm" "database_health" {
 # Redis Health Composite Alarm
 resource "aws_cloudwatch_composite_alarm" "redis_health" {
   alarm_name = "${var.environment}-venthelp-redis-health"
-  
+
   alarm_rule = "ALARM(${aws_cloudwatch_metric_alarm.redis_cpu.alarm_name}) AND ALARM(${aws_cloudwatch_metric_alarm.redis_memory.alarm_name})"
-  
+
   alarm_description = "Redis is experiencing critical issues (high CPU and memory usage)"
   alarm_actions     = [aws_sns_topic.alarms.arn]
   ok_actions        = [aws_sns_topic.alarms.arn]

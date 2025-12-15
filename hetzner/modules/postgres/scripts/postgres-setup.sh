@@ -9,7 +9,6 @@ postgres_version=${postgres_version}
 admin_user=${admin_user}
 admin_password=${admin_password}
 backup_enabled=${backup_enabled}
-databases='${databases}'
 
 echo "Starting PostgreSQL server setup..."
 

@@ -26,13 +26,8 @@ output "server_status" {
 }
 
 output "ssh_key_id" {
-  description = "ID of the SSH key"
-  value       = hcloud_ssh_key.main.id
-}
-
-output "ssh_key_name" {
-  description = "Name of the SSH key"
-  value       = hcloud_ssh_key.main.name
+  description = "ssh key id (or name) attached to the server"
+  value       = var.ssh_key_id
 }
 
 output "firewall_id" {

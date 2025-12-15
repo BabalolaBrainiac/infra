@@ -12,7 +12,7 @@ terraform {
 # Private Network
 resource "hcloud_network" "main" {
   count = var.create_private_network ? 1 : 0
-  
+
   name     = "${var.server_name}-network"
   ip_range = var.network_ip_range
   labels   = var.labels
@@ -21,7 +21,7 @@ resource "hcloud_network" "main" {
 # Network Subnet
 resource "hcloud_network_subnet" "main" {
   count = var.create_private_network ? 1 : 0
-  
+
   type         = "cloud"
   network_id   = hcloud_network.main[0].id
   network_zone = var.network_zone
@@ -29,20 +29,20 @@ resource "hcloud_network_subnet" "main" {
 }
 
 resource "hcloud_server" "main" {
-  name        = var.server_name
-  image       = var.image
-  server_type = var.server_type
-  location    = var.location
-  ssh_keys    = [hcloud_ssh_key.main.id]
+  name         = var.server_name
+  image        = var.image
+  server_type  = var.server_type
+  location     = var.location
+  ssh_keys     = [var.ssh_key_id]
   firewall_ids = var.enable_firewall ? [hcloud_firewall.main[0].id] : []
-  user_data   = var.user_data
-  labels      = var.labels
+  user_data    = var.user_data
+  labels       = var.labels
 
   # Public network configuration
   public_net {
     ipv4_enabled = var.create_floating_ip
     ipv6_enabled = var.enable_ipv6
-    ipv4 = var.create_floating_ip ? hcloud_primary_ip.main[0].id : null
+    ipv4         = var.create_floating_ip ? hcloud_primary_ip.main[0].id : null
   }
 
   # Private network configuration
@@ -56,23 +56,16 @@ resource "hcloud_server" "main" {
   }
 
   depends_on = [
-    hcloud_ssh_key.main,
     hcloud_network_subnet.main
   ]
-}
-
-# SSH Key for server access
-resource "hcloud_ssh_key" "main" {
-  name       = "${var.server_name}-ssh-key"
-  public_key = var.ssh_public_key
 }
 
 # Firewall rules
 resource "hcloud_firewall" "main" {
   count = var.enable_firewall ? 1 : 0
-  
+
   name = "${var.server_name}-firewall"
-  
+
   rule {
     direction  = "in"
     port       = "22"
@@ -116,18 +109,18 @@ resource "hcloud_firewall" "main" {
 # Volume for additional storage
 resource "hcloud_volume" "main" {
   count = var.create_volume ? 1 : 0
-  
-  name     = "${var.server_name}-volume"
+
+  name              = "${var.server_name}-volume"
   delete_protection = true
-  size     = var.volume_size
-  location = var.location
-  labels   = var.labels
+  size              = var.volume_size
+  location          = var.location
+  labels            = var.labels
 }
 
 # Attach volume to server
 resource "hcloud_volume_attachment" "main" {
   count = var.create_volume ? 1 : 0
-  
+
   volume_id = hcloud_volume.main[0].id
   server_id = hcloud_server.main.id
   automount = true
@@ -139,9 +132,9 @@ resource "hcloud_primary_ip" "main" {
 
   assignee_type = "server"
 
-  name          = "${var.server_name}-ip"
-  type          = "ipv4"
-  datacenter    = var.datacenter
-  auto_delete   = true
-  labels        = var.labels
+  name        = "${var.server_name}-ip"
+  type        = "ipv4"
+  datacenter  = var.datacenter
+  auto_delete = true
+  labels      = var.labels
 }

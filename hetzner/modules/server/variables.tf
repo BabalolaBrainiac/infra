@@ -14,7 +14,7 @@ variable "image" {
 variable "server_type" {
   description = "Server type (e.g., cx11, cx21, cx31)"
   type        = string
-  default     = "cx21"  # Better default for development
+  default     = "cpx21"
 }
 
 variable "location" {
@@ -29,8 +29,8 @@ variable "datacenter" {
   default     = "nbg1-dc3"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for server access"
+variable "ssh_key_id" {
+  description = "hetzner ssh key id (or name) to attach to the server"
   type        = string
 }
 
@@ -84,7 +84,7 @@ variable "create_volume" {
 variable "volume_size" {
   description = "Size of the volume in GB"
   type        = number
-  default     = 50  # Better default for development
+  default     = 50 # Better default for development
 }
 
 variable "volumes" {

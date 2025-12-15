@@ -79,20 +79,20 @@ resource "aws_secretsmanager_secret_version" "redis_auth_token" {
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  replication_group_id          = "${var.environment}-venthelp-redis"
-  description                   = "Redis cluster for ${var.environment} environment"
-  node_type                     = var.node_type
-  port                          = 6379
-  parameter_group_name          = aws_elasticache_parameter_group.redis.name
-  subnet_group_name             = aws_elasticache_subnet_group.redis.name
-  security_group_ids            = [aws_security_group.redis.id]
-  auth_token                    = random_password.redis_auth_token.result
-  automatic_failover_enabled   = var.automatic_failover_enabled
-  multi_az_enabled             = var.multi_az_enabled
-  num_cache_clusters            = var.num_cache_clusters
-  at_rest_encryption_enabled   = true
-  transit_encryption_enabled   = true
-  transit_encryption_mode      = "required"
+  replication_group_id       = "${var.environment}-venthelp-redis"
+  description                = "Redis cluster for ${var.environment} environment"
+  node_type                  = var.node_type
+  port                       = 6379
+  parameter_group_name       = aws_elasticache_parameter_group.redis.name
+  subnet_group_name          = aws_elasticache_subnet_group.redis.name
+  security_group_ids         = [aws_security_group.redis.id]
+  auth_token                 = random_password.redis_auth_token.result
+  automatic_failover_enabled = var.automatic_failover_enabled
+  multi_az_enabled           = var.multi_az_enabled
+  num_cache_clusters         = var.num_cache_clusters
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+  transit_encryption_mode    = "required"
 
   # Backup configuration
   snapshot_retention_limit = var.snapshot_retention_limit

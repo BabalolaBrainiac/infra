@@ -9,7 +9,7 @@ variable "server_name" {
 variable "server_type" {
   description = "Server type (cx21, cx31, cx41 recommended)"
   type        = string
-  default     = "cx21"
+  default     = "cpx21"
 }
 
 variable "location" {
@@ -18,8 +18,8 @@ variable "location" {
   default     = "nbg1"
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key for server access"
+variable "ssh_key_id" {
+  description = "hetzner ssh key id (or name) to attach to the server"
   type        = string
 }
 
@@ -88,7 +88,7 @@ variable "databases" {
 variable "enable_pgadmin" {
   description = "Enable pgAdmin web interface"
   type        = bool
-  default     = true  # Enable by default for development
+  default     = true # Enable by default for development
 }
 
 variable "pgadmin_allowed_ips" {

@@ -1,0 +1,62 @@
+services:
+  blackbox:
+    image: prom/blackbox-exporter:v0.25.0
+    command:
+      - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+      - ./prometheus/blackbox.yml:/etc/blackbox/blackbox.yml:ro
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+
+  targets:
+    image: alpine:3.20
+    env_file:
+      - .env
+    environment:
+      - HCLOUD_TOKEN=${HCLOUD_TOKEN}
+      - HCLOUD_API_BASE=${HCLOUD_API_BASE:-https://api.hetzner.cloud/v1}
+      - HCLOUD_TARGETS_REFRESH_SECONDS=${HCLOUD_TARGETS_REFRESH_SECONDS:-60}
+    volumes:
+      - ./targets:/work/targets
+      - ./bin/update-targets.sh:/work/update-targets.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          if ! /work/update-targets.sh; then
+            echo "targets update failed" >&2
+          fi
+          sleep "${HCLOUD_TARGETS_REFRESH_SECONDS}"
+        done
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    env_file:
+      - .env
+    environment:
+      - GRAFANA_CLOUD_REMOTE_WRITE_URL=${GRAFANA_CLOUD_REMOTE_WRITE_URL}
+      - GRAFANA_CLOUD_USERNAME=${GRAFANA_CLOUD_USERNAME}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./targets:/etc/prometheus/targets:ro
+      - ./secrets:/etc/prometheus/secrets:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - blackbox
+      - targets
+    restart: unless-stopped
+
+volumes:
+  prometheus_data: {}
+
+

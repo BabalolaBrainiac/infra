@@ -23,4 +23,11 @@ variable "project_name" {
 variable "ssh_public_key" {
   description = "SSH public key for server access"
   type        = string
+  default     = ""
+}
+
+variable "ssh_key_name" {
+  description = "existing hetzner ssh key name to use (if set, terraform will not create a new key)"
+  type        = string
+  default     = ""
 }

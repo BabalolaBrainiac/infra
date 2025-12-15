@@ -34,7 +34,7 @@ output "volume_id" {
 
 output "volume_device" {
   description = "Device path of the attached volume"
-  value       = module.postgres_server.volume_id
+  value       = "/dev/sdb"
 }
 
 # Connection Information

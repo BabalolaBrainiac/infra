@@ -73,43 +73,43 @@ module "postgresql" {
 module "redis" {
   source = "../../modules/redis"
 
-  environment           = var.environment
-  vpc_id                = module.vpc.vpc_id
-  private_subnet_ids    = module.vpc.private_subnet_ids
-  app_security_group_id = module.security_groups.app_security_group_id
-  node_type             = var.redis_node_type
-  num_cache_clusters    = var.redis_num_cache_clusters
+  environment                = var.environment
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnet_ids
+  app_security_group_id      = module.security_groups.app_security_group_id
+  node_type                  = var.redis_node_type
+  num_cache_clusters         = var.redis_num_cache_clusters
   automatic_failover_enabled = var.redis_automatic_failover_enabled
-  multi_az_enabled      = var.redis_multi_az_enabled
-  snapshot_retention_limit = var.redis_snapshot_retention_limit
+  multi_az_enabled           = var.redis_multi_az_enabled
+  snapshot_retention_limit   = var.redis_snapshot_retention_limit
 }
 
 # CloudWatch Monitoring and Alarms
 module "monitoring" {
   source = "../../modules/monitoring"
 
-  environment = var.environment
+  environment         = var.environment
   database_identifier = module.postgresql.database_identifier
-  redis_cluster_id = module.redis.redis_replication_group_id
-  
+  redis_cluster_id    = module.redis.redis_replication_group_id
+
   # Notification settings
   email_notifications = var.enable_email_notifications
-  notification_email = var.notification_email
-  
+  notification_email  = var.notification_email
+
   # Database alarm thresholds
-  database_cpu_threshold = var.database_cpu_threshold
+  database_cpu_threshold         = var.database_cpu_threshold
   database_connections_threshold = var.database_connections_threshold
-  database_storage_threshold = var.database_storage_threshold
-  database_read_iops_threshold = var.database_read_iops_threshold
-  database_write_iops_threshold = var.database_write_iops_threshold
-  
+  database_storage_threshold     = var.database_storage_threshold
+  database_read_iops_threshold   = var.database_read_iops_threshold
+  database_write_iops_threshold  = var.database_write_iops_threshold
+
   # Redis alarm thresholds
-  redis_cpu_threshold = var.redis_cpu_threshold
-  redis_memory_threshold = var.redis_memory_threshold
+  redis_cpu_threshold         = var.redis_cpu_threshold
+  redis_memory_threshold      = var.redis_memory_threshold
   redis_connections_threshold = var.redis_connections_threshold
-  redis_evictions_threshold = var.redis_evictions_threshold
-  
+  redis_evictions_threshold   = var.redis_evictions_threshold
+
   # Network alarm thresholds
-  network_in_threshold = var.network_in_threshold
+  network_in_threshold  = var.network_in_threshold
   network_out_threshold = var.network_out_threshold
 } 
